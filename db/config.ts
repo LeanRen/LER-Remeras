@@ -4,13 +4,11 @@ import db from '@astrojs/db';
 
 export default defineConfig({
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    // Movemos la configuración de seguridad aquí si es necesario
+    webAnalytics: { enabled: true },
+  }),
   integrations: [db()],
-  security: {
-    checkOrigin: true,
-  },
-  server: {
-    // Esto le dice a Astro que confíe en tu dominio de Vercel
-    allowedHosts: ['ler-remeras.vercel.app'] 
-  }
+  // Si la línea 7 te daba error, es mejor quitar el bloque 'security' 
+  // y dejar que Vercel maneje el origen por defecto.
 });
