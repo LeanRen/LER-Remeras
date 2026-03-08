@@ -1,18 +1,16 @@
-import { defineDb, defineTable, column } from 'astro:db';
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel/serverless';
+import db from '@astrojs/db';
 
-const Producto = defineTable({
-  columns: {
-    id: column.number({ primaryKey: true }),
-    titulo: column.text(),
-    slug: column.text({ unique: true }),
-    precio: column.number(),
-    imagen: column.text(),
-    tag: column.text(),
-    stock: column.number({ default: 0 }),
-    descripcion: column.text({ optional: true }),
+export default defineConfig({
+  output: 'server',
+  adapter: vercel(),
+  integrations: [db()],
+  security: {
+    checkOrigin: true,
+  },
+  server: {
+    // Esto le dice a Astro que confíe en tu dominio de Vercel
+    allowedHosts: ['ler-remeras.vercel.app'] 
   }
-});
-
-export default defineDb({
-  tables: { Producto }
 });
