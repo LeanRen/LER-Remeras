@@ -1,11 +1,10 @@
 import { defineConfig } from 'astro/config';
-import netlify from '@astrojs/netlify';
-import db from '@astrojs/db';
 import tailwind from '@astrojs/tailwind';
+import db from '@astrojs/db';
+import netlify from '@astrojs/netlify';
 
 export default defineConfig({
-  // ESTA LÍNEA ES CLAVE:
-  output: 'server', 
-  adapter: netlify(),
   integrations: [tailwind(), db()],
+  output: 'server', // <-- ESTO ES LO MÁS IMPORTANTE
+  adapter: netlify(),
 });
