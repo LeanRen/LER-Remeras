@@ -1,0 +1,133 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { db, Producto, eq, desc } from 'astro:db';
+
+const session = Astro.cookies.get('admin_session');
+if (!session || session.value !== 'active') return Astro.redirect('/login');
+
+// Lógica para procesar el formulario (Añadir/Editar)
+if (Astro.request.method === 'POST') {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action');
+
+    if (action === 'upsert') {
+        const id = formData.get('id');
+        const data = {
+            titulo: formData.get('titulo') as string,
+            precio: Number(formData.get('precio')),
+            stock: Number(formData.get('stock')),
+            tag: (formData.get('tag') as string).toUpperCase(),
+            imagen: formData.get('imagen') as string,
+            descripcion: formData.get('descripcion') as string, // Capturamos la descripción
+        };
+
+        if (id) {
+            await db.update(Producto).set(data).where(eq(Producto.id, Number(id)));
+        } else {
+            await db.insert(Producto).values(data);
+        }
+    }
+}
+
+const productos = await db.select().from(Producto).orderBy(desc(Producto.id));
+---
+
+<Layout title="ADMIN | LER SYSTEM">
+    <main class="min-h-screen bg-[#050505] text-white p-6 md:p-12">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12">
+            
+            <div class="w-full lg:w-[400px]">
+                <div class="sticky top-12">
+                    <h1 class="text-2xl font-raw italic mb-8">Panel de <span class="text-[#007BFF]">Control</span></h1>
+                    <form method="POST" class="space-y-4 bg-white/5 p-8 border border-white/10">
+                        <input type="hidden" name="action" value="upsert" />
+                        <input type="hidden" name="id" id="prod-id" />
+                        
+                        <div class="space-y-2">
+                            <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">Nombre del Producto</label>
+                            <input type="text" name="titulo" id="prod-titulo" required class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">Descripción del Producto</label>
+                            <textarea name="descripcion" id="prod-descripcion" rows="4" class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors resize-none uppercase tracking-wider" placeholder="EJ: ALGODÓN PREMIUM, ESTAMPA DTF..."></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">Precio</label>
+                                <input type="number" name="precio" id="prod-precio" required class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">Stock</label>
+                                <input type="number" name="stock" id="prod-stock" required class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">Categoría (Tag)</label>
+                            <input type="text" name="tag" id="prod-tag" placeholder="BUZOS, REMERAS, PACKS" class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors uppercase" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[8px] font-black uppercase text-white/40 tracking-widest">URL Imagen</label>
+                            <input type="text" name="imagen" id="prod-imagen" required class="w-full bg-black border border-white/10 p-4 text-[10px] outline-none focus:border-[#007BFF] transition-colors" />
+                        </div>
+
+                        <button class="w-full bg-[#007BFF] text-white font-black py-5 text-[10px] tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all">
+                            Guardar Producto
+                        </button>
+                    </form>
+                    <a href="/logout" class="block text-center text-[9px] font-black text-red-500 uppercase mt-8 hover:underline">Cerrar Sesión Segura</a>
+                </div>
+            </div>
+
+            <div class="flex-1">
+                <h2 class="text-2xl font-raw italic mb-8 text-white/20">Base de <span class="text-white">Datos</span></h2>
+                <div class="grid gap-4">
+                    {productos.map(p => (
+                        <div class="bg-white/5 border border-white/10 p-6 flex items-center gap-6 group hover:border-white/30 transition-all">
+                            <img src={p.imagen} class="w-16 h-20 object-cover grayscale" />
+                            <div class="flex-1">
+                                <h3 class="text-[10px] font-black uppercase tracking-widest mb-1">{p.titulo}</h3>
+                                <p class="text-xl font-raw italic text-[#007BFF]">${p.precio}</p>
+                                <p class="text-[8px] text-white/30 uppercase mt-1">Stock: {p.stock} | Tag: {p.tag}</p>
+                                {p.descripcion && <p class="text-[7px] text-white/10 uppercase mt-2 line-clamp-1">{p.descripcion}</p>}
+                            </div>
+                            <div class="flex gap-2">
+                                <button 
+                                    class="edit-btn w-10 h-10 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                                    data-prod={JSON.stringify(p)}
+                                >
+                                    ✎
+                                </button>
+                                <button class="w-10 h-10 border border-white/10 flex items-center justify-center hover:bg-red-600 transition-all">×</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<script>
+    // Lógica para cargar los datos en el form al editar
+    const editBtns = document.querySelectorAll('.edit-btn');
+    
+    editBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const data = JSON.parse((btn as HTMLElement).dataset.prod || '{}');
+            
+            (document.getElementById('prod-id') as HTMLInputElement).value = data.id;
+            (document.getElementById('prod-titulo') as HTMLInputElement).value = data.titulo;
+            (document.getElementById('prod-precio') as HTMLInputElement).value = data.precio;
+            (document.getElementById('prod-stock') as HTMLInputElement).value = data.stock;
+            (document.getElementById('prod-tag') as HTMLInputElement).value = data.tag;
+            (document.getElementById('prod-imagen') as HTMLInputElement).value = data.imagen;
+            (document.getElementById('prod-descripcion') as HTMLTextAreaElement).value = data.descripcion || "";
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+</script>

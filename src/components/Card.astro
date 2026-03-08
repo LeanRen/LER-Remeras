@@ -1,0 +1,128 @@
+---
+// src/components/Card.astro
+---
+<div id="cart-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] hidden transition-all duration-500"></div>
+
+<div id="cart-drawer" class="fixed inset-y-0 right-0 w-[90%] md:w-full md:max-w-md bg-[#050505] border-l border-white/10 z-[120] transform translate-x-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col shadow-2xl">
+    
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+        <h2 class="text-xl font-raw text-white tracking-tighter italic">Tu Pedido</h2>
+        <button id="close-cart" class="text-[10px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em]">Cerrar [X]</button>
+    </div>
+
+    <div id="cart-items-container" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+        </div>
+
+    <div class="p-6 border-t border-white/10 bg-black space-y-4">
+        <div class="space-y-3">
+            <input type="text" id="customer-name" placeholder="NOMBRE COMPLETO" class="w-full bg-white/5 border border-white/10 p-4 text-[10px] text-white outline-none focus:border-[#007BFF] uppercase tracking-widest font-bold" />
+            <input type="text" id="customer-city" placeholder="LOCALIDAD / CIUDAD" class="w-full bg-white/5 border border-white/10 p-4 text-[10px] text-white outline-none focus:border-[#007BFF] uppercase tracking-widest font-bold" />
+        </div>
+
+        <div class="flex justify-between items-end pt-2">
+            <span class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Total</span>
+            <span id="cart-total" class="text-3xl font-raw text-[#007BFF] tracking-tighter italic">$ 0</span>
+        </div>
+        
+        <div class="space-y-3 pt-2">
+            <button id="checkout-btn" class="w-full bg-white text-black font-black py-5 uppercase text-[10px] tracking-[0.3em] hover:bg-[#007BFF] hover:text-white transition-all active:scale-[0.98]">
+                Finalizar Pedido
+            </button>
+            
+            <button id="continue-shopping" class="w-full border border-white/10 text-white/40 font-black py-4 uppercase text-[9px] tracking-[0.3em] hover:border-white hover:text-white transition-all">
+                Seguir Comprando
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { width: 3px; }
+    .no-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .no-scrollbar::-webkit-scrollbar-thumb { background: #007BFF; border-radius: 10px; }
+</style>
+
+<script>
+    import { cartItems, isCartOpen, removeFromCart, updateQuantity } from '../store/cart';
+
+    const container = document.getElementById('cart-items-container');
+    const totalEl = document.getElementById('cart-total');
+    const checkoutBtn = document.getElementById('checkout-btn') as HTMLButtonElement;
+    const continueBtn = document.getElementById('continue-shopping');
+
+    cartItems.subscribe(items => {
+        if (!container || !totalEl) return;
+        
+        container.innerHTML = items.length === 0 
+            ? '<div class="h-full flex items-center justify-center opacity-20"><p class="text-[10px] font-black uppercase tracking-widest">Pedido Vacío</p></div>'
+            : items.map(item => `
+                <div class="flex gap-4 bg-white/[0.03] p-4 border border-white/5 group">
+                    <img src="${item.imagen}" class="w-16 h-20 object-cover shadow-lg" />
+                    <div class="flex-1 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <h4 class="text-[10px] font-black uppercase tracking-widest">${item.titulo}</h4>
+                            <p class="font-raw text-[#007BFF] text-xs italic">$${(item.precio * item.quantity).toLocaleString('es-AR')}</p>
+                        </div>
+                        <p class="text-[8px] text-white/30 uppercase font-black">Talle: ${item.selectedTalle}</p>
+                        <div class="flex items-center gap-4 mt-2">
+                            <button class="dec-qty text-white/30 hover:text-[#007BFF]" data-id="${item.uniqueKey}">-</button>
+                            <span class="text-[10px] font-black">${item.quantity}</span>
+                            <button class="inc-qty text-white/30 hover:text-[#007BFF]" data-id="${item.uniqueKey}">+</button>
+                            <button class="remove-item text-red-500/30 hover:text-red-500 text-[8px] font-black ml-auto uppercase" data-id="${item.uniqueKey}">Borrar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        const total = items.reduce((acc, i) => acc + (i.precio * i.quantity), 0);
+        totalEl.innerText = `$ ${total.toLocaleString('es-AR')}`;
+
+        document.querySelectorAll('.remove-item').forEach(b => b.addEventListener('click', () => {
+            if (window.navigator.vibrate) window.navigator.vibrate(50);
+            removeFromCart((b as HTMLElement).dataset.id!);
+        }));
+        document.querySelectorAll('.inc-qty').forEach(b => b.addEventListener('click', () => {
+            if (window.navigator.vibrate) window.navigator.vibrate(30);
+            updateQuantity((b as HTMLElement).dataset.id!, 1);
+        }));
+        document.querySelectorAll('.dec-qty').forEach(b => b.addEventListener('click', () => {
+            if (window.navigator.vibrate) window.navigator.vibrate(30);
+            updateQuantity((b as HTMLElement).dataset.id!, -1);
+        }));
+    });
+
+    isCartOpen.subscribe(open => {
+        document.getElementById('cart-drawer')?.classList.toggle('translate-x-full', !open);
+        document.getElementById('cart-overlay')?.classList.toggle('hidden', !open);
+        document.body.style.overflow = open ? 'hidden' : '';
+    });
+
+    // Eventos para cerrar el carrito
+    document.getElementById('close-cart')?.addEventListener('click', () => isCartOpen.set(false));
+    document.getElementById('cart-overlay')?.addEventListener('click', () => isCartOpen.set(false));
+    continueBtn?.addEventListener('click', () => isCartOpen.set(false));
+
+    checkoutBtn?.addEventListener('click', async () => {
+        const items = cartItems.get();
+        const name = (document.getElementById('customer-name') as HTMLInputElement).value;
+        const city = (document.getElementById('customer-city') as HTMLInputElement).value;
+
+        if(items.length === 0 || !name || !city) return alert("COMPLETÁ TUS DATOS");
+        if (window.navigator.vibrate) window.navigator.vibrate([50, 30, 50]);
+
+        const res = await fetch('/api/checkout', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items }) 
+        });
+
+        if(res.ok) {
+            let msg = `🔥 *PEDIDO LER REMERAS* 🔥%0A%0A👤 *CLIENTE:* ${name.toUpperCase()}%0A📍 *DESTINO:* ${city.toUpperCase()}%0A%0A`;
+            items.forEach(i => msg += `• ${i.titulo} (${i.selectedTalle}) x${i.quantity}%0A`);
+            msg += `%0A💰 *TOTAL:* ${totalEl?.innerText}`;
+            window.open(`https://wa.me/5491140486522?text=${msg}`, '_blank');
+            cartItems.set([]);
+            isCartOpen.set(false);
+        }
+    });
+</script>

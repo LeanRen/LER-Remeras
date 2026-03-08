@@ -1,0 +1,63 @@
+---
+import Layout from '../layouts/Layout.astro';
+let error = false;
+
+if (Astro.request.method === 'POST') {
+  const data = await Astro.request.formData();
+  // Mantenemos tus credenciales: admin / ler2026
+  if (data.get('usuario') === 'admin' && data.get('password') === 'ler2026') {
+    Astro.cookies.set('admin_session', 'active', { path: '/', maxAge: 60 * 60 * 24 });
+    return Astro.redirect('/admin');
+  } else { 
+    error = true; 
+  }
+}
+---
+<Layout title="LOGIN | LER SYSTEM">
+  <main class="min-h-screen bg-[#050505] flex items-center justify-center p-6">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-raw italic text-white tracking-tighter uppercase mb-2">
+            L&A <span class="text-[#007BFF]">Panel de control</span>
+        </h2>
+        <p class="text-[8px] font-black text-white/20 tracking-[0.5em] uppercase">Acceso Restringido</p>
+      </div>
+
+      <form method="POST" class="bg-white/[0.02] border border-white/5 p-10 space-y-6 backdrop-blur-sm">
+        <div class="space-y-2">
+          <label class="text-[8px] font-black text-white/30 uppercase tracking-widest">Usuario</label>
+          <input 
+            type="text" 
+            name="usuario" 
+            required 
+            class="w-full bg-black border border-white/10 p-4 text-[10px] text-white outline-none focus:border-[#007BFF] transition-colors" 
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-[8px] font-black text-white/30 uppercase tracking-widest">Contraseña</label>
+          <input 
+            type="password" 
+            name="password" 
+            required 
+            class="w-full bg-black border border-white/10 p-4 text-[10px] text-white outline-none focus:border-[#007BFF] transition-colors" 
+          />
+        </div>
+
+        {error && (
+            <div class="bg-red-500/10 border border-red-500/50 p-4">
+                <p class="text-red-500 text-[9px] text-center font-black tracking-widest uppercase">Credenciales Inválidas</p>
+            </div>
+        )}
+
+        <button class="w-full bg-white text-black font-black py-5 text-[10px] tracking-[0.3em] uppercase hover:bg-[#007BFF] hover:text-white transition-all active:scale-[0.98]">
+          Entrar al Panel
+        </button>
+      </form>
+      
+      <a href="/" class="block text-center mt-8 text-[9px] font-black text-white/20 hover:text-white transition-colors uppercase tracking-widest italic">
+        &larr; Volver a la Tienda
+      </a>
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,23 @@
+{
+  "name": "ler-remeras",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/db": "0.19.0",
+    "@astrojs/preact": "^4.1.3",
+    "@astrojs/tailwind": "6.0.0",
+    "@astrojs/vercel": "^9.0.4",
+    "@nanostores/persistent": "^1.3.3",
+    "@nanostores/preact": "^1.0.0",
+    "astro": "^5.17.1",
+    "nanostores": "^1.1.1",
+    "preact": "^10.28.4",
+    "tailwindcss": "3.4.1"
+  }
+}

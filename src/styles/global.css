@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --street-negro: #0A0A0A;
+}
+
+body {
+  background-color: var(--street-negro);
+  color: white;
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}

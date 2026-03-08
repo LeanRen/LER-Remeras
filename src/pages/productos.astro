@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import CardRemera from '../components/CardRemera.astro';
+import Card from '../components/Card.astro';
+import { db, Producto, desc } from 'astro:db';
+const productos = await db.select().from(Producto).orderBy(desc(Producto.id));
+const categorias = [...new Set(productos.map(p => p.tag))].filter(Boolean);
+---
+<Layout title="TIENDA | LER REMERAS">
+    <Nav />
+    <Card />
+    <main class="pt-32 bg-[#050505] min-h-screen pb-24">
+        <header class="max-w-7xl mx-auto px-6 mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div>
+                <h1 class="text-5xl md:text-8xl font-raw italic leading-[0.8] mb-4 text-white">Nuestros  <br/> <span class="text-[#007BFF]">Productos</span></h1>
+                <p class="text-[10px] text-white/30 tracking-[0.4em] uppercase">Diseños exclusivos</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button class="filter-btn active px-6 py-3 border border-white/10 text-[9px] font-black uppercase tracking-widest transition-all" data-category="all">Todos</button>
+                {categorias.map(cat => (
+                    <button class="filter-btn px-6 py-3 border border-white/10 text-[9px] font-black uppercase tracking-widest transition-all hover:border-[#007BFF]" data-category={cat}>{cat}</button>
+                ))}
+            </div>
+        </header>
+        <section class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-12">
+                {productos.map(p => (
+                    <div class="product-item" data-category={p.tag}>
+                        <CardRemera id={p.id} titulo={p.titulo} precio={p.precio.toString()} imagen={p.imagen} stock={p.stock} />
+                    </div>
+                ))}
+            </div>
+        </section>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .filter-btn.active { background: #007BFF; color: white; border-color: #007BFF; }
+</style>

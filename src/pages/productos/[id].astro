@@ -1,0 +1,108 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Card from '../../components/Card.astro';
+import { db, Producto, eq } from 'astro:db';
+
+const { id } = Astro.params;
+const producto = (await db.select().from(Producto).where(eq(Producto.id, Number(id))))[0];
+
+if (!producto) return Astro.redirect('/productos');
+
+const esBuzo = producto.tag?.toUpperCase().includes('BUZO');
+const talles = esBuzo ? ["1", "2", "3"] : ["S", "M", "L", "XL"];
+const medidas = esBuzo 
+    ? [ { t: "1", a: "60", l: "70" }, { t: "2", a: "63", l: "73" }, { t: "3", a: "66", l: "76" } ]
+    : [ { t: "S", a: "52", l: "70" }, { t: "M", a: "54", l: "72" }, { t: "L", a: "56", l: "74" }, { t: "XL", a: "58", l: "76" } ];
+---
+
+<Layout title={`${producto.titulo} | LER`}>
+    <Nav />
+    <Card />
+
+    <main class="pt-24 md:pt-32 min-h-screen bg-[#050505] text-white">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            
+            <div class="aspect-[4/5] md:aspect-[3/4] overflow-hidden bg-black border border-white/5 shadow-2xl">
+                <img src={producto.imagen} alt={producto.titulo} class="w-full h-full object-cover transition-transform duration-1000 hover:scale-105" />
+            </div>
+
+            <div class="flex flex-col">
+                <h1 class="text-4xl md:text-6xl font-raw tracking-tighter mb-4 leading-none italic uppercase">{producto.titulo}</h1>
+                <p class="text-3xl md:text-4xl font-raw text-[#007BFF] mb-6 italic">$ {producto.precio.toLocaleString('es-AR')}</p>
+
+                <div class="mb-8 max-w-md">
+                    <p class="text-[9px] font-black uppercase tracking-[0.4em] mb-3 text-white/40 italic">Descripción</p>
+                    <p class="text-[11px] md:text-xs text-white/60 leading-relaxed uppercase tracking-widest font-medium">
+                        {producto.descripcion || "Remera de algodón premium con estampa en DTF de alta definición. Calce perfecto y durabilidad garantizada para el uso diario."}
+                    </p>
+                </div>
+
+                <div class="mb-8">
+                    <p class="text-[9px] font-black uppercase tracking-[0.4em] mb-4 text-white/40 italic">Seleccionar Talle</p>
+                    <div class="flex flex-wrap gap-2 md:gap-3">
+                        {talles.map(talle => (
+                            <button class="talle-btn w-14 h-14 md:w-16 md:h-16 border border-white/10 flex items-center justify-center text-xs font-black transition-all hover:border-[#007BFF] hover:text-[#007BFF] uppercase" data-talle={talle}>
+                                {talle}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div class="mb-10 bg-white/[0.02] border border-white/5 p-4 md:p-6">
+                    <h3 class="text-[8px] font-black uppercase tracking-widest text-white/20 mb-4 italic">Guía de Medidas (cm)</h3>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="text-[8px] text-white/20 uppercase font-black">Talle</div>
+                        <div class="text-[8px] text-white/20 uppercase font-black">Ancho</div>
+                        <div class="text-[8px] text-white/20 uppercase font-black">Largo</div>
+                        {medidas.map(m => (
+                            <>
+                                <div class="py-2 border-t border-white/5 text-[10px] font-bold uppercase">{m.t}</div>
+                                <div class="py-2 border-t border-white/5 text-[10px] font-bold text-[#007BFF]">{m.a}</div>
+                                <div class="py-2 border-t border-white/5 text-[10px] font-bold text-[#007BFF]">{m.l}</div>
+                            </>
+                        ))}
+                    </div>
+                </div>
+
+                <button id="add-to-cart-btn" data-product={JSON.stringify(producto)} disabled={producto.stock <= 0} class="w-full bg-white text-black py-5 md:py-6 font-raw text-[10px] md:text-xs tracking-[0.3em] hover:bg-[#007BFF] hover:text-white transition-all active:scale-95 uppercase disabled:opacity-20">
+                    {producto.stock > 0 ? "Añadir al Pedido" : "Sin Stock"}
+                </button>
+            </div>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<script>
+    import { addToCart } from '../../store/cart';
+
+    let selectedTalle = "";
+    const talleBtns = document.querySelectorAll('.talle-btn');
+    const addBtn = document.getElementById('add-to-cart-btn') as HTMLButtonElement;
+
+    talleBtns.forEach(btn => btn.addEventListener('click', () => {
+        if (window.navigator.vibrate) window.navigator.vibrate(20);
+        talleBtns.forEach(b => b.classList.remove('border-[#007BFF]', 'text-[#007BFF]'));
+        btn.classList.add('border-[#007BFF]', 'text-[#007BFF]');
+        selectedTalle = (btn as HTMLElement).dataset.talle || "";
+    }));
+
+    addBtn?.addEventListener('click', () => {
+        if (!selectedTalle) return alert("POR FAVOR, SELECCIONÁ UN TALLE");
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+
+        const data = JSON.parse(addBtn.dataset.product || '{}');
+        addToCart(data, selectedTalle);
+        
+        addBtn.innerText = "¡AÑADIDO!";
+        addBtn.style.backgroundColor = "#007BFF";
+        addBtn.style.color = "white";
+        setTimeout(() => {
+            addBtn.innerText = "Añadir al Pedido";
+            addBtn.style.backgroundColor = "";
+            addBtn.style.color = "";
+        }, 2000);
+    });
+</script>
